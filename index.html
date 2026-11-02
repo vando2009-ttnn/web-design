@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kho ảnh của tôi</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#182033;--muted:#68738a;--accent:#536dfe;--line:#e6eaf2}
+*{box-sizing:border-box}body{margin:0;font-family:Arial, sans-serif;background:var(--bg);color:var(--ink)}
+header{padding:30px 20px;background:linear-gradient(130deg,#536dfe,#8b5cf6);color:white}
+.wrap{max-width:1050px;margin:auto;padding:0 18px}h1{margin:0 0 8px;font-size:clamp(25px,5vw,36px)}header p{margin:0;opacity:.9}
+main{padding:25px 0 50px}.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:18px}
+.upload{background:var(--card);border:2px dashed #aab6ff;border-radius:16px;padding:24px;text-align:center;margin-bottom:22px}
+.upload strong{display:block;font-size:18px;margin-bottom:7px}.upload p{color:var(--muted);margin:0 0 15px}
+button,.pick{border:0;border-radius:10px;padding:11px 16px;background:var(--accent);color:white;font-weight:700;cursor:pointer;display:inline-block}
+button:hover,.pick:hover{filter:brightness(.94)}button.secondary{background:#edf0ff;color:#3548c7}button.danger{background:#fff0f0;color:#c43c3c}
+input[type=file]{display:none}.count{color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px #24345b0b}
+.item img{width:100%;height:170px;object-fit:cover;display:block;background:#eef0f5}
+.info{padding:11px}.name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:10px}
+.actions{display:flex;gap:7px}.actions button{font-size:12px;padding:8px 10px;flex:1}
+.empty{text-align:center;color:var(--muted);padding:35px 10px;background:white;border-radius:14px;border:1px solid var(--line)}
+.note{font-size:12px;color:var(--muted);margin-top:18px;line-height:1.5}
+@media(max-width:480px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.item img{height:135px}.actions button{padding:8px 5px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>📸 Kho ảnh của tôi</h1><p>Lưu trữ, xem và tải ảnh ngay trên thiết bị của bạn.</p></div></header>
+<main class="wrap">
+  <section class="upload">
+    <strong>Thêm ảnh vào kho</strong>
+    <p>Chọn một hoặc nhiều ảnh từ điện thoại hoặc máy tính.</p>
+    <label class="pick" for="files">＋ Chọn ảnh</label>
+    <input id="files" type="file" accept="image/*" multiple>
+  </section>
+  <div class="toolbar">
+    <span class="count" id="count">Chưa có ảnh nào</span>
+    <div><button class="secondary" id="downloadAll">Tải tất cả</button> <button class="danger" id="clearAll">Xóa tất cả</button></div>
+  </div>
+  <div id="gallery" class="grid"></div>
+  <p class="note">Lưu ý: Ảnh được lưu trong bộ nhớ của trình duyệt trên thiết bị này. Nếu xóa dữ liệu trình duyệt hoặc đổi thiết bị, ảnh có thể bị mất. Hãy tải ảnh về để giữ bản sao.</p>
+</main>
+<script>
+const input=document.getElementById('files'), gallery=document.getElementById('gallery');
+const count=document.getElementById('count');
+let photos=[];
+function render(){
+  count.textContent=photos.length?`${photos.length} ảnh trong kho`:'Chưa có ảnh nào';
+  gallery.innerHTML='';
+  if(!photos.length){gallery.innerHTML='<div class="empty" style="grid-column:1/-1">🖼️<br><br>Kho ảnh đang trống. Hãy chọn ảnh để bắt đầu!</div>';return;}
+  photos.forEach((photo,index)=>{
+    const card=document.createElement('article');card.className='item';
+    const img=document.createElement('img');img.src=photo.url;img.alt=photo.name;
+    const info=document.createElement('div');info.className='info';
+    const name=document.createElement('div');name.className='name';name.textContent=photo.name;name.title=photo.name;
+    const actions=document.createElement('div');actions.className='actions';
+    const dl=document.createElement('button');dl.textContent='Tải xuống';dl.onclick=()=>download(photo);
+    const del=document.createElement('button');del.textContent='Xóa';del.className='danger';del.onclick=()=>{photos.splice(index,1);render();};
+    actions.append(dl,del);info.append(name,actions);card.append(img,info);gallery.append(card);
+  });
+}
+function download(photo){
+  const a=document.createElement('a');a.href=photo.url;a.download=photo.name;
+  document.body.appendChild(a);a.click();a.remove();
+}
+input.addEventListener('change',()=>{
+  [...input.files].forEach(file=>{
+    if(file.type.startsWith('image/'))photos.push({name:file.name,url:URL.createObjectURL(file)});
+  });
+  input.value='';render();
+});
+document.getElementById('downloadAll').onclick=()=>{
+  if(!photos.length){alert('Kho ảnh đang trống!');return;}
+  photos.forEach((p,i)=>setTimeout(()=>download(p),i*350));
+};
+document.getElementById('clearAll').onclick=()=>{
+  if(!photos.length)return;
+  if(confirm('Bạn có chắc muốn xóa toàn bộ ảnh khỏi kho hiện tại?')){
+    photos.forEach(p=>URL.revokeObjectURL(p.url));photos=[];render();
+  }
+};
+render();
+</script>
+</body>
+</html>
